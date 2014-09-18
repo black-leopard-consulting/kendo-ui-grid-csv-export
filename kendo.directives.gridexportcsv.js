@@ -14,58 +14,62 @@
             return {
                 restrict: "A",
                 link: function($scope, element, attrs) {
-                    attrs.$observe(attrs.kTarget, function(val) {
-                        var target = attrs.kTarget;
-                        if (!target) {
-                            throw new Error("Target Grid is missing for export");
+                    var target = attrs.kTarget;
+                    if (!target) {
+                        throw new Error("Target Grid is missing for export");
+                    }
+
+                    element.on('click', function(e) {
+                        var d = new Date();
+                        var dateFormatted = $filter('date')(d, "yyyy-MM-dd HH_mm_ss");
+                        var nameStart = attrs.fileName || 'GridExport';
+                        var fileName = nameStart + ' ' + dateFormatted;
+                        var csv = '';
+                        var grid = $('#' + target).data('kendoGrid'),
+                            dataSource = grid.dataSource,
+                            filters = dataSource.filter(),
+                            sorts = dataSource.sort(),
+                            allData = dataSource._data,
+                            query = new kendo.data.Query(allData),
+                            originalPageSize = dataSource.pageSize,
+                            visibleColumns = getVisibleColumns(grid.columns);
+
+                        //apply sorts and filters 
+                        if (filters) {
+                            query = query.filter(filters);
                         }
-                        element.on('click', function(e) {
-                            var result = "";
-                            var d = new Date();
-                            var dateFormatted = $filter('date')(d, "yyyy-MM-dd HH_mm_ss");
-                            var nameStart = attrs.fileName ? attrs.fileName : 'GridExport';
-                            var fileName = nameStart + ' ' + dateFormatted;
-                            var csv = '';
-                            var grid = $('#' + target).data('kendoGrid'),
-                                dataSource = grid.dataSource,
-                                filters = dataSource.filter(),
-                                sorts = dataSource.sort(),
-                                allData = dataSource._data,
-                                query = new kendo.data.Query(allData),
-                                originalPageSize = dataSource.pageSize,
-                                visibleColumns = getVisibleColumns(grid.columns);
 
-                            //apply sorts and filters 
-                            var data = query.filter(filters).sort(sorts).data;
+                        if (sorts) {
+                            query = query.sort(sorts);
+                        }
+                        var data = query.data;
 
-                            //Increase page size to cover all data
-                            dataSource.pageSize = data.length;
+                        //Increase page size to cover all data
+                        dataSource.pageSize = data.length;
 
-                            //First add header row
-                            csv += generateHeaderRow(visibleColumns);
+                        //First add header row
+                        csv += generateHeaderRow(visibleColumns);
 
-                            //Add row data
-                            csv += generateRowData(data, visibleColumns);
+                        //Add row data
+                        csv += generateRowData(data, visibleColumns);
 
-                            result += csv;
-                            // Reset datasource
-                            dataSource.pageSize = originalPageSize;
+                        // Reset datasource
+                        dataSource.pageSize = originalPageSize;
 
-                            //kickoff download
-                            if (window.navigator.msSaveBlob) {
-                                window.navigator.msSaveBlob(new Blob([result]), fileName + '.csv');
-                            } else {
-                                /*
+                        //kickoff download
+                        if (window.navigator.msSaveBlob) {
+                            window.navigator.msSaveBlob(new Blob([result]), fileName + '.csv');
+                        } else {
+                            /*
                                 The above doesn't seem to work in Chrome/Firefox
                                 */
-                                var a = document.createElement('a');
-                                a.href = 'data:attachment/csv,' + encodeURIComponent(result);
-                                a.target = '_blank';
-                                a.download = fileName + '.csv';
-                                document.body.appendChild(a);
-                                a.click();
-                            }
-                        });
+                            var a = document.createElement('a');
+                            a.href = 'data:attachment/csv,' + encodeURIComponent(csv);
+                            a.target = '_blank';
+                            a.download = fileName + '.csv';
+                            document.body.appendChild(a);
+                            a.click();
+                        }
                     });
                 }
             };
