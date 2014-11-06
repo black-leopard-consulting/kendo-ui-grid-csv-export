@@ -9,8 +9,9 @@
      * data-file-name {pre-set exported file name}
      * data-k-target = {target grid id}
      */
-    .directive('kendoCsvExport', ['$filter',
-        function($filter) {
+    .directive('kendoCsvExport', [
+
+        function() {
             return {
                 restrict: "A",
                 link: function($scope, element, attrs) {
@@ -21,9 +22,7 @@
 
                     element.on('click', function(e) {
                         var d = new Date();
-                        var dateFormatted = $filter('date')(d, "yyyy-MM-dd HH_mm_ss");
-                        var nameStart = attrs.fileName || 'GridExport';
-                        var fileName = nameStart + ' ' + dateFormatted;
+                        var fileName = attrs.fileName || 'GridExport';
                         var csv = '';
                         var grid = $('#' + target).data('kendoGrid'),
                             dataSource = grid.dataSource,
@@ -44,7 +43,7 @@
                         }
                         var data = query.data;
 
-                        //Increase page size to cover all data
+                        //Increase page size to cover all data if using client side pagination
                         dataSource.pageSize = data.length;
 
                         //First add header row
@@ -60,9 +59,7 @@
                         if (window.navigator.msSaveBlob) {
                             window.navigator.msSaveBlob(new Blob([result]), fileName + '.csv');
                         } else {
-                            /*
-                                The above doesn't seem to work in Chrome/Firefox
-                                */
+                            //The above doesn't seem to work in Chrome/Firefox                              
                             var a = document.createElement('a');
                             a.href = 'data:attachment/csv,' + encodeURIComponent(csv);
                             a.target = '_blank';
@@ -89,9 +86,9 @@
                         continue; /* column hidden */
                     }
                     if (typeof(title) === "undefined") {
-                        title = field /* use default field name if no title specified */
+                        columns[i].title = field; /* use default field name if no title specified */
                     }
-                    visibleColumns.push(columns[i])
+                    visibleColumns.push(columns[i]);
                 }
                 return visibleColumns;
             }
@@ -131,7 +128,7 @@
 
                         var value = data[row][fieldName];
 
-                        if (!value) {
+                        if (value === undefined || value === null) {
                             value = "";
                         } else {
                             if (!format && !template) {
